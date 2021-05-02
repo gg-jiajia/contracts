@@ -13,6 +13,11 @@ import "./interfaces/IDexRouter.sol";
 import "./interfaces/IKingKong.sol";
 import "./interfaces/IWETH.sol";
 
+interface ISwapMining {
+    function takerWithdraw() external;
+    function mdx() external returns (address);
+}
+
 contract StratX is Ownable, ReentrancyGuard, Pausable {
     // Maximize yields in HecoPool
 
@@ -460,5 +465,15 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
         require(_token != earned, "!safe");
         require(_token != desire, "!safe");
         IERC20(_token).safeTransfer(_to, _amount);
+    }
+
+    function harvestSwapMiningReward() external {
+        ISwapMining mining = ISwapMining(0x7373c42502874C88954bDd6D50b53061F018422e);
+        address mdx = mining.mdx();
+        uint _before = IERC20(mdx).balanceOf(address(this));
+        mining.takerWithdraw();
+        uint _after = IERC20(mdx).balanceOf(address(this));
+        uint _reward = _after.sub(_before);
+        IERC20(mdx).safeTransfer(retrieve, _reward);
     }
 }

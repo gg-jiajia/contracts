@@ -76,7 +76,6 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
 
     bool private canSetReduceRate = true;
     uint private reduceRate = 900; // 100 = 10%
-    uint private lastPeriod = 0;
 
     // Events
     event Deposit(address indexed user, uint indexed pid, uint amount);
@@ -160,16 +159,45 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
         }
     }
 
-    // Return reward multiplier over the given _from to _to block.
-    function getMultiplier(uint _from, uint _to)
-        public
-        view
-        returns (uint)
-    {
+    function phase(uint blockNumber) public pure returns (uint) {
+        if (blockNumber > startBlock) {
+            uint _phase = (blockNumber.sub(startBlock).sub(1)).div(blockOfWeek);
+            if (_phase >= 10) {
+                return 10;
+            }
+            return _phase;
+        }
+        return 0;
+    }
+
+    function reward(uint blockNumber) public view returns (uint) {
+        uint _phase = phase(blockNumber);
+        uint _reward = KPerBlock;
+
+        while (_phase > 0) {
+            _phase--;
+            _reward = _reward.mul(reduceRate).div(1000);
+        }
+
+        return _reward;
+    }
+
+    function getBlockReward(uint _lastRewardBlock) public view returns (uint) {
         if (IERC20(KToken).totalSupply() >= KMaxSupply) {
             return 0;
         }
-        return _to.sub(_from);
+
+        uint blockReward = 0;
+        uint n = phase(_lastRewardBlock);
+        uint m = phase(block.number);
+        while (n < m) {
+            n++;
+            uint r = n.mul(blockOfWeek).add(startBlock);
+            blockReward = blockReward.add((r.sub(_lastRewardBlock)).mul(reward(r)));
+            _lastRewardBlock = r;
+        }
+        blockReward = blockReward.add((block.number.sub(_lastRewardBlock)).mul(reward(block.number)));
+        return blockReward;
     }
 
     function calcProfit(uint _pid) internal view returns (uint, uint) {
@@ -197,11 +225,8 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
         uint sharesTotal = pool.strat.sharesTotal();
 
         if (block.number > pool.lastRewardBlock && sharesTotal != 0) {
-            uint multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint KReward =
-                multiplier.mul(KPerBlock).mul(pool.allocPoint).div(
-                    totalAllocPoint
-                );
+            uint blockReward = getBlockReward(pool.lastRewardBlock);
+            uint KReward = blockReward.mul(pool.allocPoint).div(totalAllocPoint);
 
             reward1 = reward1.add(
                 KReward.mul(1e12).div(sharesTotal)
@@ -254,18 +279,6 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
 
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint _pid) public {
-        if (block.number > startBlock) {
-            uint period = block.number.sub(startBlock).div(blockOfWeek);
-
-            if (period <= 10) {
-                uint elapse = period.sub(lastPeriod);
-                if (elapse > 0) {
-                    KPerBlock = KPerBlock.mul(reduceRate ** elapse).div(1000 ** elapse);
-                    lastPeriod = period;
-                }
-            }
-        }
-
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -276,15 +289,11 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
             pool.lastRewardBlock = block.number;
             return;
         }
-        uint multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        if (multiplier <= 0) {
+        uint blockReward = getBlockReward(pool.lastRewardBlock);
+        if (blockReward <= 0) {
             return;
         }
-
-        uint KReward =
-            multiplier.mul(KPerBlock).mul(pool.allocPoint).div(
-                totalAllocPoint
-            );
+        uint KReward = blockReward.mul(pool.allocPoint).div(totalAllocPoint);
 
         // Companion reward
         IKToken(KToken).mint(ownerA, KReward.mul(ownerARate).div(10000));
