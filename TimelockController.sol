@@ -245,7 +245,7 @@ contract TimelockController is AccessControl {
         bytes32 predecessor,
         bytes32 salt,
         uint256 delay
-    ) public virtual onlyRole(PROPOSER_ROLE) {
+    ) external virtual onlyRole(PROPOSER_ROLE) {
         require(
             targets.length == values.length,
             "TimelockController: length mismatch"
@@ -338,7 +338,7 @@ contract TimelockController is AccessControl {
         bytes[] calldata datas,
         bytes32 predecessor,
         bytes32 salt
-    ) public payable virtual onlyRole(EXECUTOR_ROLE) {
+    ) external payable virtual onlyRole(EXECUTOR_ROLE) {
         require(
             targets.length == values.length,
             "TimelockController: length mismatch"

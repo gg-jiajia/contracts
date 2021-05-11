@@ -61,13 +61,12 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
     uint public constant blockOfWeek = 201600; // 24 * 60 * 60 * 7 / 3
     uint public constant startBlock  = 3200000;
     uint public constant KMaxSupply  = 85000000e18;
-    uint public constant KPerWeek    = 3500000e18;
 
     address public KToken;
     address public ownerA;
     address public ownerB;
 
-    uint public KPerBlock  = KPerWeek.div(blockOfWeek);
+    uint public constant K_Per_Block  = 17361111111111111111;
     uint public ownerARate = 882;  // 7.5%
     uint public ownerBRate = 294;  // 2.5%
 
@@ -111,7 +110,7 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
             totalBonusPoint = totalBonusPoint.add(_bonusPoint);
             bonusPool.set(poolInfo.length, BonusPoolMap.Bonus({
                 strat:           address(_strat),
-                allocPoint:      _allocPoint,
+                allocPoint:      _bonusPoint,
                 accPerShare:     0
             }));
         }
@@ -172,7 +171,7 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
 
     function reward(uint blockNumber) public view returns (uint) {
         uint _phase = phase(blockNumber);
-        uint _reward = KPerBlock;
+        uint _reward = K_Per_Block;
 
         while (_phase > 0) {
             _phase--;
@@ -498,26 +497,39 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
         }
     }
 
+    event SetAddresses(address indexed token, address indexed team1, address indexed team2);
     function setAddresses(address token_, address team1_, address team2_) public onlyOwner {
+        require(token_ != address(0), "Zero address");
+        require(team1_ != address(0), "Zero address");
+        require(team2_ != address(0), "Zero address");
+
         KToken = token_;
         ownerA = team1_;
         ownerB = team2_;
+
+        emit SetAddresses(token_, team1_, team2_);
     }
 
+    event SetOwnerRate(uint indexed a, uint indexed b);
     function setOwnerRate(uint a, uint b) public onlyOwner {
         ownerARate = a;
         ownerBRate = b;
+        emit SetOwnerRate(a, b);
     }
 
+    event SetReduceRate(uint indexed rate);
     function setReduceRate(uint _rate) public onlyOwner {
         if (canSetReduceRate) {
             reduceRate = _rate;
+            emit SetReduceRate(_rate);
         }
     }
 
+    event RenounceSetReduceRate(bool indexed status);
     function renounceSetReduceRate() public onlyOwner {
         if (canSetReduceRate) {
             canSetReduceRate = false;
+            emit RenounceSetReduceRate(canSetReduceRate);
         }
     }
 

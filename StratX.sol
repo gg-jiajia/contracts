@@ -83,6 +83,11 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
 
         IDexRouter _router
     ) public {
+        require(_retrieve != address(0), "Zero address");
+        require(_KFarmPool != address(0), "Zero address");
+        require(_KToken != address(0), "Zero address");
+        require(_desire != address(0), "Zero address");
+
         governor = msg.sender;
         retrieve = _retrieve;
 
@@ -428,32 +433,46 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
         _unpause();
     }
 
+    event SetEntranceFeeFactor(uint indexed entranceFeeFactor);
     function setEntranceFeeFactor(uint _entranceFeeFactor) public {
         require(msg.sender == governor, "Not authorised");
         require(_entranceFeeFactor > entranceFeeFactorLL, "!safe - too low");
         require(_entranceFeeFactor <= entranceFeeFactorMax, "!safe - too high");
+
         entranceFeeFactor = _entranceFeeFactor;
+        emit SetEntranceFeeFactor(entranceFeeFactor);
     }
 
-    function setbuyBackRate(uint _buyBackRate) public {
+    event SetBuybackRate(uint indexed rate);
+    function setBuyBackRate(uint _buyBackRate) public {
         require(msg.sender == governor, "Not authorised");
         require(buyBackRate <= buyBackRateUL, "too high");
+
         buyBackRate = _buyBackRate;
+        emit SetBuybackRate(buyBackRate);
     }
 
+    event SetBonusRate(uint indexed rate);
     function setBonusRate(uint _bonusRate) public {
         require(msg.sender == governor, "Not authorised");
         bonusRate = _bonusRate;
+        emit SetBonusRate(bonusRate);
     }
 
+    event SetGov(address indexed gov);
     function setGov(address _governor) public {
         require(msg.sender == governor, "!gov");
+        require(_governor != address(0), "Zero address");
+
         governor = _governor;
+        emit SetGov(governor);
     }
 
+    event SetOnlyGov(bool indexed onlyGov);
     function setOnlyGov(bool _onlyGov) public {
         require(msg.sender == governor, "!gov");
         onlyGov = _onlyGov;
+        emit SetOnlyGov(onlyGov);
     }
 
     function inCaseTokensGetStuck(
@@ -462,8 +481,11 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
         address _to
     ) public {
         require(msg.sender == governor, "!gov");
+        require(_token != address(0), "Zero address");
+
         require(_token != earned, "!safe");
         require(_token != desire, "!safe");
+
         IERC20(_token).safeTransfer(_to, _amount);
     }
 
