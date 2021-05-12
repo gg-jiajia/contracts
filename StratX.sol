@@ -280,8 +280,12 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
 
         // Converts farm tokens into desire tokens
         uint earnedAmt = IERC20(earned).balanceOf(address(this));
-        uint buybacked = earnedAmt.mul(buyBackRate).div(buyBackRateMax);
+        if (earnedAmt == 0) {
+            lastEarnBlock = block.number;
+            return;
+        }
 
+        uint buybacked = earnedAmt.mul(buyBackRate).div(buyBackRateMax);
         IERC20(earned).safeIncreaseAllowance(
             address(router),
             earnedAmt
