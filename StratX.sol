@@ -47,13 +47,14 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
     uint public wantLockedTotal = 0;
 
     address public constant WHT = 0x5545153CCFcA01fbd7Dd11C0b23ba694D9509A6F;
+    address public constant USDT = 0xa71EdC38d189767582C38A3145b5873052c3e47a;
 
     uint public buyBackRate = 200;
     uint public bonusRate = 400;
     uint public constant buyBackRateMax = 10000; // 100 = 1%
     uint public constant buyBackRateUL = 800;
 
-    uint public entranceFeeFactor = 9995; // < 0.05% entrance fee - goes to pool + prevents front-running
+    uint public entranceFeeFactor = 9800; // < 2% entrance fee - goes to pool + prevents front-running
     uint public constant entranceFeeFactorMax = 10000;
     uint public constant entranceFeeFactorLL = 9950; // 0.5% is the max entrance fee settable. LL = lowerlimit
 
@@ -121,9 +122,9 @@ contract StratX is Ownable, ReentrancyGuard, Pausable {
                 earnedToDesirePath = [WHT, desire];
             }
 
-            earnedToKTokenPath = [earned, WHT, KToken];
-            if (WHT == earned) {
-                earnedToKTokenPath = [WHT, KToken];
+            earnedToKTokenPath = [earned, USDT, KToken];
+            if (USDT == earned) {
+                earnedToKTokenPath = [USDT, KToken];
             }
 
             earnedToToken0Path = [earned, WHT, token0];
