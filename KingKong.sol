@@ -54,6 +54,7 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
         IStrategy strat; // Strategy address that will auto compound want tokens
 
         uint allocPoint;      // How many allocation points assigned to this pool. KToken to distribute per block.
+        uint bonusPoint;
         uint lastRewardBlock; // Last block number that KToken distribution occurs.
 
         uint accPerShare;     // Accumulated KToken per share, times 1e12. See below.
@@ -74,7 +75,7 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
     mapping(uint => mapping(address => StakeFrozenMap.UintToUintMap)) frozenInfo;
 
     uint public constant blockOfWeek = 201600; // 24 * 60 * 60 * 7 / 3
-    uint public constant startBlock  = 3200000;
+    uint public constant startBlock  = 4688888;
     uint public constant KMaxSupply  = 85000000e18;
 
     address public KToken;
@@ -135,7 +136,9 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
                 want:            _want,
                 strat:           _strat,
 
-                allocPoint:      _allocPoint,
+                allocPoint: _allocPoint,
+                bonusPoint: _bonusPoint,
+
                 lastRewardBlock: lastRewardBlock,
                 accPerShare:     0,
                 frozenPeriod:    _frozenPeriod,
@@ -165,6 +168,7 @@ contract KingKong is IKingKong, Ownable, ReentrancyGuard {
             _allocPoint
         );
         pool.allocPoint = _allocPoint;
+        pool.bonusPoint = _bonusPoint;
 
         (bool isOnlyStake, BonusPoolMap.Bonus storage bonus) = bonusPool.tryGet(_pid);
         if (isOnlyStake) {
